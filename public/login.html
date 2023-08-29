@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login Page</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f5f5f5;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      justify-content: center;
+      flex-wrap: nowrap;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    h1 {
+      text-align: center;
+      color: #e74c3c;
+    }
+
+    form {
+      background-color: #fff;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
+      width: 320px;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 6px;
+      color: #333;
+    }
+
+    input[type="text"],
+    input[type="password"] {
+      width: 95%;
+      padding: 10px;
+      margin-bottom: 12px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+    }
+
+    button {
+      background-color: #e74c3c;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      padding: 10px 20px;
+      cursor: pointer;
+      width: 100%;
+      font-size: 16px;
+    }
+
+    button:hover {
+      background-color: #c0392b;
+    }
+  </style>
+</head>
+<body>
+  <h1>FoodFinder</h1>
+  <br />
+  <form id="loginForm">
+    <label for="username">Username:</label>
+    <input type="text" id="username" name="username" required>
+    <label for="password">Password:</label>
+    <input type="password" id="password" name="password" required>
+    <button type="button" id="loginButton">Login</button>
+    <button type="button" id="signup" style="margin-top: 5px;">Sign Up</button>
+
+  </form>
+  
+  <script>
+    document.getElementById("loginButton").addEventListener("click", () => {
+      const username = document.getElementById("username").value;
+      const password = document.getElementById("password").value;
+
+      // Perform login validation or API request here
+
+
+
+      var requestOptions = {
+        method: 'POST',
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          "username": username,
+          "password": password
+        }),
+        redirect: 'follow'
+      };
+      fetch("http://127.0.0.1:2000/login/q", requestOptions)
+      .then(response => {
+        if (!response.ok) {
+          throw new Error('Network response was not ok');
+        }
+        return response.json();
+      })
+      .then(result => {
+        if(result.coll.status){
+          // Handle the successful result here
+          localStorage.setItem('user_id', result.coll.findQuery._id);
+          alert(result.coll.msg);
+          console.log(result.coll);
+          window.location.href = '/'; //טעינה חזרה לדף הראשי
+        }else{
+          alert(result.coll.msg);
+        }
+        console.log(result.coll);
+      })
+      .catch(error => {
+        // Handle errors here
+        console.log('Error:', error);
+      });
+  
+      
+    });
+
+    document.getElementById("signup").addEventListener("click", () => {
+      
+      const username = document.getElementById("username").value;
+      const password = document.getElementById("password").value;
+
+      // Perform login validation or API request here
+
+							
+								var requestOptions = {
+									method: 'POST',
+									headers: {
+										"Content-Type": "application/json"
+									},
+									body:  JSON.stringify({
+										"newUserInfo": {
+											"username": username,
+											"password": password
+										}
+									}),
+									redirect: 'follow'
+								};	
+							
+
+
+
+						fetch("http://127.0.0.1:2000/insert/guest", requestOptions)
+						.then(response => {
+							if (!response.ok) {
+								throw new Error('Network response was not ok');
+							}
+							return response.json();
+						})
+						.then(result => {
+
+							if(result.coll != null){
+                if(result.coll.status){
+                  localStorage.setItem('user_id', result.coll.queryInsert._id);
+                  window.location.href = '/'; //טעינה חזרה לדף הראשי
+                }
+                alert( result.coll.msg);
+                
+              
+                console.log(result.coll);
+                
+							}
+						})
+					});
+  </script>
+</body>
+</html>
