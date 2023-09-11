@@ -2,7 +2,7 @@ const express = require('express')
 
 const { MongoClient, ServerApiVersion,ObjectId } = require('mongodb');
 
-const uri = "mongodb+srv://hadar27197:XT9V6gYSGUqWzdkr@cluster0.wmjenck.mongodb.net/?retryWrites=true&w=majority";
+const uri = ""; // Put here The MongoDB URI String
 const bodyParser = require('body-parser');
 const multer = require('multer');
 const path = require('path');
