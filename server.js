@@ -7,7 +7,7 @@ const bodyParser = require('body-parser');
 const multer = require('multer');
 const path = require('path');
 const cors = require('cors');
-import crypto from 'crypto';
+const crypto = require('crypto');
 
 
 // עלאת קבצים
@@ -59,7 +59,6 @@ function isValidInput(arg) {
 
 
 
-
 const app = express();
 app.use(cors());
 
@@ -104,6 +103,15 @@ app.post('/:type/:value', (req, res) => {
      if(pathType == "find" && (pathValue == "coupons" || pathValue == "reviews")){
         collSend = await coll.findOne(postDataJS);
         console.log(collSend);
+      }else if(pathType == "check" && pathValue == "user"){
+        const checkQuery = {"token": sha256_hmac(postDataJS.login_string,secertHash)}
+        findQuery = await database.collection("users").findOne(checkQuery);
+        if(findQuery != null){
+          collSend = {"msg":"User login!","status": true,"findQuery":findQuery};
+        }else{
+          collSend = { "msg": "Username or Password not defind :(", "status": false, "findQuery": findQuery };
+        }
+        console.log(collSend);
       }else if(pathType == "findMany" && (pathValue == "list" || pathValue == "reviews")){ 
         collSend = await coll.find(postDataJS).toArray();
      
@@ -112,7 +120,21 @@ app.post('/:type/:value', (req, res) => {
         const loginQuery = {"username": postDataJS.username, "password":  sha256_hmac(postDataJS.password,secertHash)}
         findQuery = await database.collection("users").findOne(loginQuery);
         if(findQuery != null){
-          collSend = {"msg":"User login!","status": true,"findQuery":findQuery};
+          var token = await makeid(120) + '-' + await sha256_hmac(findQuery._id,'dwg3Adg345d');
+        
+          var do_token_hash = await sha256_hmac(token,secertHash);
+         //  var api_key = await makeid(80)
+         //  var key_hash = await sha256_hmac(api_key,"MasterKeyd3d2ec859eqXlNjKpKv1c35191dc068845b4bf0e485eqXlNjKpKv16a31390e7d264c52d208b53a837ac9");
+     
+         const resUpdateConnections = await database.collection("users").updateOne(
+           { username: postDataJS.username },
+           {     
+              $set: { 
+                  token: do_token_hash
+               }          
+           }
+          );
+          collSend = {"msg":"User login!","status": true,"findQuery":findQuery,"token": token,"resUpdateConnections": resUpdateConnections};
         }else{
           collSend = { "msg": "Username or Password not defind :(", "status": false, "findQuery": findQuery };
         }
@@ -120,8 +142,12 @@ app.post('/:type/:value', (req, res) => {
       }else if(pathType == "insert"){
       
         if(pathValue == "admin" || pathValue == "list" || pathValue == "coupons" || pathValue == "remove"){
-        var findUserFilterAdmin = { _id: new ObjectId(postDataJS.user_id), permissions: 1}
-        
+          var login_string = postDataJS.login_string
+          var token = await sha256_hmac(login_string,secertHash);
+          const findUserFilterAdmin =  {
+                token: token,
+                permissions: 1
+          };
         UserAccess = await database.collection("users").findOne(findUserFilterAdmin);
         
           if(UserAccess != null){
@@ -205,7 +231,8 @@ app.post('/:type/:value', (req, res) => {
       
       }else if(pathValue == "reviews" || pathValue == "guest"){
         if(pathValue == "reviews"){
-          var findUserFilter = { _id: new ObjectId(postDataJS.user_id)}
+          var do_token_hash = await sha256_hmac(postDataJS.login_string,secertHash);
+          var findUserFilter = { token: do_token_hash}
           User = await database.collection("users").findOne(findUserFilter);
           if(User != null){
             
@@ -239,13 +266,18 @@ app.post('/:type/:value', (req, res) => {
           }
           console.log(User);
         }else if(pathValue == "guest"){
+          
           var findUserFilter = { "username": postDataJS.newUserInfo.username }
           User = await database.collection("users").findOne(findUserFilter);
+          
           if(User == null){
               var username = await postDataJS.newUserInfo.username;
               var password = await sha256_hmac(postDataJS.newUserInfo.password,secertHash);
-              queryInsert = await coll.insertOne({username: username,password: password,permissions: 0});
-              collSend = await {"msg": "Welcome, for our new friend!","status": true,"queryInsert": queryInsert};
+              var token = await makeid(120);
+              var do_token_hash = await sha256_hmac(token,secertHash);
+              queryInsert = await database.collection("users").insertOne({username: username,password: password,permissions: 0,token:do_token_hash});
+              
+              collSend = await {"msg": "Welcome, for our new friend!","status": true,"queryInsert": queryInsert,"token": token};
             
           }else {
             collSend = await {"msg": "user exist","status": false};
@@ -253,9 +285,8 @@ app.post('/:type/:value', (req, res) => {
         }
       }
       }else if(pathType == "findById"){
-        if(isValidInput(postDataJS.user_id)){
-          var id = await { _id: new ObjectId(postDataJS.user_id) }
-          findUserFilter = await database.collection("users").findOne(id);
+          var find_login_string = await { token: sha256_hmac(postDataJS.login_string,secertHash) }
+          findUserFilter = await database.collection("users").findOne(find_login_string);
           if(findUserFilter != null){
             if(isValidInput(postDataJS.id)){
               var id = await { _id: new ObjectId(postDataJS.id) }
@@ -273,9 +304,6 @@ app.post('/:type/:value', (req, res) => {
             collSend = await {"msg":"user not found or not have premissions :(","status_user": false,"status": false}
           }
           console.log(collSend);
-        }else{
-          collSend = await {"msg":"user not found or not have premissions :(","status_user": false,"status": false};
-        }
         
       }else if(pathType == "findByUserId"){
         if(isValidInput(postDataJS.user_id)){
