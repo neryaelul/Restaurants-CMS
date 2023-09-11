@@ -104,7 +104,7 @@
       .then(result => {
         if(result.coll.status){
           // Handle the successful result here
-          localStorage.setItem('user_id', result.coll.findQuery._id);
+          localStorage.setItem('login_string', result.coll.token);
           alert(result.coll.msg);
           console.log(result.coll);
           window.location.href = '/'; //טעינה חזרה לדף הראשי
@@ -157,7 +157,8 @@
 
 							if(result.coll != null){
                 if(result.coll.status){
-                  localStorage.setItem('user_id', result.coll.queryInsert._id);
+                  localStorage.setItem('login_string', result.coll.token);
+                  alert(result.coll.msg);
                   window.location.href = '/'; //טעינה חזרה לדף הראשי
                 }
                 alert( result.coll.msg);
